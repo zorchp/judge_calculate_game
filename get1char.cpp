@@ -31,7 +31,7 @@ char get1char(void) {
     putchar('\b');                           // 删除回显
 #endif
 
-    // printf("input:  [%c]\n", c);
+    // printf("input:  [%d, %c]\n", c, c);
 
 #ifdef _WIN32
     // Do nothing

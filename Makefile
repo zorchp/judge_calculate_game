@@ -1,10 +1,17 @@
 CXX=clang++
-CXX_FLAG?=-o main.out
-SRC= main.cpp
 
-.PHONY: clean all
-all:
-	$(CXX) $(SRC) $(CXX_FLAG)
+SRC=main.cpp
+OBJ=check.out
 
+CXX_FLAG?= -O2 -o $(OBJ)
+
+.PHONY: clean compile run all
+all: compile run
+
+compile:
+	$(CXX) $(SRC) $(CXX_FLAG) 
+
+run:
+	./$(OBJ)
 clean:
 	rm *.out
