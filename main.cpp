@@ -6,13 +6,12 @@
 #include <ctime>
 #include <signal.h>
 #include <unistd.h>
-// #include <ncurses.h> // 捕获 非回车输入
-#include "get1char.cpp"
-
-extern char get1char(void);
+// #include <termios.h>// 设置终端, 回显时候会卡顿
+#include <ncurses.h> // 捕获 非回车输入
 
 
 int calc(int a, int b, char op) {
+    if (op == '/' && (b == 0 || a % b)) return INT_MAX; // 除数为 0 或者不能整除
     switch (op) {
         case '+':
             return a + b;
@@ -59,11 +58,15 @@ void addsig(int sig, void(handler)(int)) {
 }
 
 // 信号
+int right_ans_cnt{};
 
 void time_handler(int sig) {
-    puts("time out \n"); //
+    endwin();
+    printf("time out \n"); //
+    printf("best record: %d\n Game over!\n", right_ans_cnt);
     exit(-1);
 }
+
 
 void eventloop() {
     //
@@ -72,11 +75,12 @@ void eventloop() {
     const char wrong = ']';
     int per_time = 5;
     int wrong_ans{}; // 信号
-    int right_ans_cnt{};
     addsig(SIGALRM, time_handler);
     printf("按下回车 开始游戏:\n");
     printf("'%c' 表示正确, '%c' 表示错误\n", right, wrong);
     getchar(); // 捕获回车
+
+    initscr();
     for (;;) {
         // 设置定时器
         alarm(per_time);
@@ -84,24 +88,31 @@ void eventloop() {
         srand(time(0)); // 确保随机
         int a = rand() % 10;
         int b = rand() % 10;
-        char op = ops[rand() % 4];
+        int op_idx = rand() % 4;
+        char op = ops[op_idx];
 
-        if (op == '/' && (b == 0 || a % b)) {
-            alarm(0);
-            continue; // 除数为 0 或者不能整除
-        }
         int ans = calc(a, b, op);
+        if (ans == INT_MAX) continue;
         bool real_ans = rand() % 2;
         // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
-        if (!real_ans) {
-            int tmp_ans = calc(ans, rand() % 10, ops[rand() % 4]);
-            ans = (ans == tmp_ans) ? ans + rand() % 10 + 1 : tmp_ans;
+        if (!real_ans) { // 错误
+            if (a & 1) { // 采用加入随机数的方法
+                int tmp_ans = calc(ans, rand() % 10, ops[rand() % 4]);
+                ans = (ans == tmp_ans) ? ans + rand() % 10 + op : tmp_ans;
+            } else { // 修改运算符的方法
+                int tmp_ans_op = calc(a, b, ops[(op_idx + 1) % 4]);
+                ans = (ans == tmp_ans_op) ? ans + rand() % 10 + op : tmp_ans_op;
+            }
+            if (ans == INT_MAX) continue;
         }
         char buf[1024];
-        snprintf(buf, 512, "%d %c %d = %d \r", a, op, b, ans);
-        printf("%s", buf);
+        snprintf(buf, 512, "%d %c %d = %d\r", a, op, b, ans);
+        printw("%s", buf);
+        refresh();
 
-        char input_ans = get1char();
+        char input_ans = getch();
+        refresh();
+
         if (input_ans != right && input_ans != wrong) {
             perror("unexpected input\n");
             exit(-1);
@@ -116,13 +127,13 @@ void eventloop() {
         // std::cout << "✔️  \r" << std::flush;
         // alarm(0);
         // 退格, 去掉上一个算式的显示
-        for (int i{}; i <= 1 + strlen(buf); ++i) putchar('\b');
+        // for (int i{}; i <= 1 + strlen(buf); ++i) putchar('\b');
     }
     if (wrong_ans) {
-        std::cout << "error answer!\n";
-        std::cout << "best record: " << right_ans_cnt << "\n";
+        endwin();
+        printf("wrong answer\n");
+        printf("best record: %d\n Game over!\n", right_ans_cnt);
     }
-    std::cout << "oops! game over\n";
 }
 
 int main(int argc, char const* argv[]) {
