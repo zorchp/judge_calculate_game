@@ -4,6 +4,7 @@
 #include <chrono>
 #include <thread>
 #include <ctime>
+#include <climits>
 #include <signal.h>
 #include <unistd.h>
 // #include <termios.h>// 设置终端, 回显时候会卡顿
@@ -41,7 +42,7 @@ void show_process_bar(int second) {
                 std::cout << "[" << std::string(i, '=') << "=>"
                           << std::string(len - i, ' ') << "]\r" << std::flush;
         }
-        std::cout << '\n';
+        putchar('\n');
     };
 
     std::thread t1(process_bar, second);
@@ -67,23 +68,22 @@ void time_handler(int sig) {
     exit(-1);
 }
 
+const char ops[] = "+-*/";
+const char right = ',';
+const char wrong = '.';
 
 void eventloop() {
     //
-    const char ops[] = "+-*/";
-    const char right = '[';
-    const char wrong = ']';
     int per_time = 5;
     int wrong_ans{}; // 信号
-    addsig(SIGALRM, time_handler);
-    printf("按下回车 开始游戏:\n");
-    printf("'%c' 表示正确, '%c' 表示错误\n", right, wrong);
-    getchar(); // 捕获回车
 
     initscr();
+    cbreak();
+    noecho();
+    // halfdelay(1);
+    // keypad(stdscr, TRUE);// use arrow key
     for (;;) {
         // 设置定时器
-        alarm(per_time);
         // show_process_bar(per_time);
         srand(time(0)); // 确保随机
         int a = rand() % 10;
@@ -93,6 +93,7 @@ void eventloop() {
 
         int ans = calc(a, b, op);
         if (ans == INT_MAX) continue;
+
         bool real_ans = rand() % 2;
         // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
         if (!real_ans) { // 错误
@@ -105,15 +106,17 @@ void eventloop() {
             }
             if (ans == INT_MAX) continue;
         }
-        char buf[1024];
-        snprintf(buf, 512, "%d %c %d = %d\r", a, op, b, ans);
-        printw("%s", buf);
+
+        clear();
+        printw("%d %c %d = %d\n\r", a, op, b, ans);
         refresh();
 
-        char input_ans = getch();
-        refresh();
+        alarm(per_time);
+
+        int input_ans = getch();
 
         if (input_ans != right && input_ans != wrong) {
+            endwin();
             perror("unexpected input\n");
             exit(-1);
         }
@@ -125,9 +128,7 @@ void eventloop() {
         }
         ++right_ans_cnt;
         // std::cout << "✔️  \r" << std::flush;
-        // alarm(0);
-        // 退格, 去掉上一个算式的显示
-        // for (int i{}; i <= 1 + strlen(buf); ++i) putchar('\b');
+        alarm(0);
     }
     if (wrong_ans) {
         endwin();
@@ -138,6 +139,10 @@ void eventloop() {
 
 int main(int argc, char const* argv[]) {
     //
+    addsig(SIGALRM, time_handler);
+    printf("按下回车 开始游戏:\n");
+    printf("'%c' 表示正确, '%c' 表示错误\n", right, wrong);
+    getchar(); // 捕获回车
     eventloop();
     // char c = get1char();
 }

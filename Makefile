@@ -1,9 +1,9 @@
-CXX=clang++
+CXX=g++
 
 SRC=main.cpp
 OBJ=check.out
 
-CXX_FLAG?= -O2 -o $(OBJ) -lncurses
+CXX_FLAG?= -O2 -o $(OBJ) -lncurses -std=c++14
 
 .PHONY: clean compile run all
 all: compile run
