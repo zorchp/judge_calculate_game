@@ -12,7 +12,6 @@
 
 
 int calc(int a, int b, char op) {
-    if (op == '/' && (b == 0 || a % b)) return INT_MAX; // 除数为 0 或者不能整除
     switch (op) {
         case '+':
             return a + b;
@@ -80,19 +79,17 @@ void eventloop() {
     initscr();
     cbreak();
     noecho();
-    // halfdelay(1);
-    // keypad(stdscr, TRUE);// use arrow key
+    srand(time(0)); // 确保随机
     for (;;) {
-        // 设置定时器
         // show_process_bar(per_time);
-        srand(time(0)); // 确保随机
         int a = rand() % 10;
-        int b = rand() % 10;
+        int b = 1 + rand() % 10; // 除数不为零
         int op_idx = rand() % 4;
         char op = ops[op_idx];
 
         int ans = calc(a, b, op);
-        if (ans == INT_MAX) continue;
+        // 保证整除
+        if (op == '/' && a % b) a -= a % b;
 
         bool real_ans = rand() % 2;
         // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
@@ -128,7 +125,7 @@ void eventloop() {
         }
         ++right_ans_cnt;
         // std::cout << "✔️  \r" << std::flush;
-        alarm(0);
+        // alarm(0);
     }
     if (wrong_ans) {
         endwin();

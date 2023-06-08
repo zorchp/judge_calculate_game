@@ -6,12 +6,15 @@ OBJ=check.out
 CXX_FLAG?= -O2 -o $(OBJ) -lncurses -std=c++14
 
 .PHONY: clean compile run all
+
+
 all: compile run
 
 compile:
-	$(CXX) $(SRC) $(CXX_FLAG) 
+	@$(CXX) $(SRC) $(CXX_FLAG) 
 
 run:
-	./$(OBJ)
+	@./$(OBJ)
+
 clean:
-	rm *.out
+	-rm *.out
