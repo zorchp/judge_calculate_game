@@ -3,11 +3,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <ctime>
-#include <climits>
 #include <signal.h>
 #include <unistd.h>
-// #include <termios.h>// 设置终端, 回显时候会卡顿
 #include <ncurses.h> // 捕获 非回车输入
 
 
@@ -68,12 +65,43 @@ void time_handler(int sig) {
 }
 
 const char ops[] = "+-*/";
+const int op_len = strlen(ops);
 const char right = ',';
 const char wrong = '.';
+const int per_time = 5; // 判断的时间
+const int range = 32;
+
+int generate_random() {
+    int a = rand() % range;
+    int b = 1 + rand() % range; // 除数不为零
+    int op_idx = rand() % op_len;
+    char op = ops[op_idx];
+
+    int ans = calc(a, b, op);
+    // 保证整除
+    if (op == '/' && a % b) a -= a % b;
+
+    bool real_ans = rand() % 2;
+    // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
+    if (!real_ans) { // 错误
+        if (a & 1) { // 采用加入随机数的方法
+            int tmp_ans = calc(ans, 1 + rand() % 10, ops[rand() % 4]);
+            ans = (ans == tmp_ans) ? ans + rand() % 10 + 1 : tmp_ans;
+        } else { // 修改运算符的方法
+            int tmp_ans_op = calc(a, b, ops[(op_idx + 1) % 4]);
+            ans = (ans == tmp_ans_op) ? ans + rand() % 10 + 1 : tmp_ans_op;
+        }
+    }
+
+    clear();
+    printw("%d %c %d = %d\n\r", a, op, b, ans);
+    refresh();
+
+    return real_ans;
+}
 
 void eventloop() {
     //
-    int per_time = 5;
     int wrong_ans{}; // 信号
 
     initscr();
@@ -82,31 +110,7 @@ void eventloop() {
     srand(time(0)); // 确保随机
     for (;;) {
         // show_process_bar(per_time);
-        int a = rand() % 10;
-        int b = 1 + rand() % 10; // 除数不为零
-        int op_idx = rand() % 4;
-        char op = ops[op_idx];
-
-        int ans = calc(a, b, op);
-        // 保证整除
-        if (op == '/' && a % b) a -= a % b;
-
-        bool real_ans = rand() % 2;
-        // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
-        if (!real_ans) { // 错误
-            if (a & 1) { // 采用加入随机数的方法
-                int tmp_ans = calc(ans, rand() % 10, ops[rand() % 4]);
-                ans = (ans == tmp_ans) ? ans + rand() % 10 + op : tmp_ans;
-            } else { // 修改运算符的方法
-                int tmp_ans_op = calc(a, b, ops[(op_idx + 1) % 4]);
-                ans = (ans == tmp_ans_op) ? ans + rand() % 10 + op : tmp_ans_op;
-            }
-            if (ans == INT_MAX) continue;
-        }
-
-        clear();
-        printw("%d %c %d = %d\n\r", a, op, b, ans);
-        refresh();
+        auto real_ans = generate_random();
 
         alarm(per_time);
 

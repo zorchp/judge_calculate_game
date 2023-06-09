@@ -1,4 +1,4 @@
-# judge_calculate_game
+# judge_formula_game
 
 A game used at the terminal to judge whether the formula is correct or not.
 
