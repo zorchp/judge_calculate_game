@@ -79,7 +79,8 @@ int generate_random() {
 
     int ans = calc(a, b, op);
     // 保证整除
-    if (op == '/' && a % b) a -= a % b;
+    if (op == '/' && a % b)
+        a -= a % b;
 
     bool real_ans = rand() % 2;
     // 错误情况, 随机做一个结果出来, 必须保证这个结果一定是错误的
